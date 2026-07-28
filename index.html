@@ -19,19 +19,11 @@
         <button onclick="addNewEvent()" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition">+ New Event</button>
       </div>
 
-      <!-- Budget & Spending Summary -->
-      <div class="grid grid-cols-3 gap-3 text-center pt-2">
-        <div class="p-3 bg-slate-50 rounded-xl">
-          <p class="text-xs text-slate-500">Budget</p>
-          <p id="budgetVal" class="text-base font-bold text-slate-900">$0</p>
-        </div>
+      <!-- Spending Summary -->
+      <div class="grid grid-cols-1 gap-3 text-center pt-2">
         <div class="p-3 bg-slate-50 rounded-xl">
           <p class="text-xs text-slate-500">Total Spent</p>
           <p id="spentVal" class="text-base font-bold text-amber-600">$0</p>
-        </div>
-        <div class="p-3 bg-slate-50 rounded-xl">
-          <p class="text-xs text-slate-500">Remaining</p>
-          <p id="remainingVal" class="text-base font-bold text-emerald-600">$0</p>
         </div>
       </div>
     </div>
@@ -111,9 +103,7 @@
 
       const event = data.find(e => e.id === currentEventId);
       if (!event) {
-        document.getElementById('budgetVal').innerText = '$0';
         document.getElementById('spentVal').innerText = '$0';
-        document.getElementById('remainingVal').innerText = '$0';
         document.getElementById('participantBadges').innerHTML = `<div class="text-sm text-slate-500">Add an event to start.</div>`;
         document.getElementById('payerSelect').innerHTML = `<option value="" disabled selected>Add participants after creating an event</option>`;
         document.getElementById('splitCheckboxes').innerHTML = `<div class="text-sm text-slate-500">Add participants after creating an event.</div>`;
@@ -123,11 +113,8 @@
 
       // Render Summary Stats
       const spent = event.expenses.reduce((sum, item) => sum + item.amount, 0);
-      const remaining = event.budget - spent;
 
-      document.getElementById('budgetVal').innerText = `$${event.budget}`;
       document.getElementById('spentVal').innerText = `$${spent.toFixed(2)}`;
-      document.getElementById('remainingVal').innerText = `$${remaining.toFixed(2)}`;
 
       // Render Participant Badges
       const badgesContainer = document.getElementById('participantBadges');
@@ -198,12 +185,10 @@
 
     function addNewEvent() {
       const title = prompt("Enter event name (e.g. Marriage, Vacation):");
-      const budget = parseFloat(prompt("Enter total budget amount ($):")) || 0;
       if (title) {
         const newEvent = { 
           id: Date.now().toString(), 
           title, 
-          budget, 
           participants: ['You'], 
           expenses: [] 
         };
