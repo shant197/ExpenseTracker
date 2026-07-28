@@ -198,10 +198,12 @@
 
       const creditors = Object.entries(balances)
         .filter(([, amount]) => amount > 0.01)
-        .map(([name, amount]) => ({ name, amount }));
+        .map(([name, amount]) => ({ name, amount }))
+        .sort((a, b) => b.amount - a.amount);
       const debtors = Object.entries(balances)
         .filter(([, amount]) => amount < -0.01)
-        .map(([name, amount]) => ({ name, amount: -amount }));
+        .map(([name, amount]) => ({ name, amount: -amount }))
+        .sort((a, b) => b.amount - a.amount);
 
       let settlementLines = '';
       let d = 0;
