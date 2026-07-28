@@ -93,12 +93,11 @@
   </div>
 
   <script>
-    // Initial data loaded from localStorage; starts empty so users can add events from the UI.
-    let data = JSON.parse(localStorage.getItem('eventTrackerData')) || [];
-    let currentEventId = data[0]?.id || '';
+    // Initial data starts empty each time the page loads.
+    let data = [];
+    let currentEventId = '';
 
     function saveData() {
-      localStorage.setItem('eventTrackerData', JSON.stringify(data));
       render();
     }
 
