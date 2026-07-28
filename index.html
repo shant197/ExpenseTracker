@@ -93,25 +93,8 @@
   </div>
 
   <script>
-    // Initial data with default events & participants
-    let data = JSON.parse(localStorage.getItem('eventTrackerData')) || [
-      { 
-        id: '1', 
-        title: 'Denver Trip', 
-        budget: 1500, 
-        participants: ['You', 'Alice', 'Bob'],
-        expenses: [
-          { id: 'e1', title: 'Dinner', amount: 90, category: 'Food', paidBy: 'You', splitWith: ['You', 'Alice', 'Bob'] }
-        ] 
-      },
-      { 
-        id: '2', 
-        title: 'Baby Shower', 
-        budget: 800, 
-        participants: ['You', 'Sarah', 'Mom'],
-        expenses: [] 
-      }
-    ];
+    // Initial data loaded from localStorage; starts empty so users can add events from the UI.
+    let data = JSON.parse(localStorage.getItem('eventTrackerData')) || [];
     let currentEventId = data[0]?.id || '';
 
     function saveData() {
@@ -121,10 +104,23 @@
 
     function render() {
       const select = document.getElementById('eventSelect');
-      select.innerHTML = data.map(e => `<option value="${e.id}" ${e.id === currentEventId ? 'selected' : ''}>${e.title}</option>`).join('');
+      if (data.length === 0) {
+        select.innerHTML = `<option value="" disabled selected>Create an event to begin</option>`;
+      } else {
+        select.innerHTML = data.map(e => `<option value="${e.id}" ${e.id === currentEventId ? 'selected' : ''}>${e.title}</option>`).join('');
+      }
 
       const event = data.find(e => e.id === currentEventId);
-      if (!event) return;
+      if (!event) {
+        document.getElementById('budgetVal').innerText = '$0';
+        document.getElementById('spentVal').innerText = '$0';
+        document.getElementById('remainingVal').innerText = '$0';
+        document.getElementById('participantBadges').innerHTML = `<div class="text-sm text-slate-500">Add an event to start.</div>`;
+        document.getElementById('payerSelect').innerHTML = `<option value="" disabled selected>Add participants after creating an event</option>`;
+        document.getElementById('splitCheckboxes').innerHTML = `<div class="text-sm text-slate-500">Add participants after creating an event.</div>`;
+        document.getElementById('expenseList').innerHTML = `<li class="py-3 text-sm text-slate-400 text-center">Create an event first to log expenses.</li>`;
+        return;
+      }
 
       // Render Summary Stats
       const spent = event.expenses.reduce((sum, item) => sum + item.amount, 0);
@@ -184,7 +180,10 @@
 
     function addParticipant() {
       const event = data.find(e => e.id === currentEventId);
-      if (!event) return;
+      if (!event) {
+        alert('Create or select an event first.');
+        return;
+      }
 
       const name = prompt("Enter friend or relative's name:");
       if (name && name.trim()) {
@@ -237,7 +236,12 @@
       }
 
       const event = data.find(e => e.id === currentEventId);
-      if (event && title && amount) {
+      if (!event) {
+        alert('Create or select an event first.');
+        return;
+      }
+
+      if (title && amount) {
         event.expenses.push({ 
           id: Date.now().toString(), 
           title, 
