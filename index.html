@@ -95,8 +95,19 @@
 
   <script>
     // Initial event data is stored in localStorage so the user can keep track of events entered.
-    let data = JSON.parse(localStorage.getItem('eventTrackerData')) || [];
-    let currentEventId = data[0]?.id || '';
+    let data = [];
+    let currentEventId = '';
+
+    function loadData() {
+      try {
+        const stored = localStorage.getItem('eventTrackerData');
+        data = stored ? JSON.parse(stored) : [];
+      } catch (error) {
+        console.error('Unable to load stored events:', error);
+        data = [];
+      }
+      currentEventId = data[0]?.id || '';
+    }
 
     function saveData() {
       localStorage.setItem('eventTrackerData', JSON.stringify(data));
@@ -113,6 +124,10 @@
 
       const event = data.find(e => e.id === currentEventId);
       if (!event) {
+        if (data.length > 0) {
+          currentEventId = data[0].id;
+          return render();
+        }
         document.getElementById('spentVal').innerText = '$0';
         document.getElementById('participantBadges').innerHTML = `<div class="text-sm text-slate-500">Add an event to start.</div>`;
         document.getElementById('payerSelect').innerHTML = `<option value="" disabled selected>Add participants after creating an event</option>`;
@@ -326,6 +341,7 @@
       }
     });
 
+    loadData();
     render();
   </script>
 </body>
