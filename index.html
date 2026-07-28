@@ -49,11 +49,13 @@
         <div class="flex gap-2">
           <input id="amount" type="number" step="0.01" placeholder="Amount ($)" required class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <select id="category" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>Travel</option>
+            <option>Airbnb</option>
+            <option>Gas</option>
+            <option>Grocery</option>
+            <option>Drinks</option>
             <option>Food</option>
-            <option>Venue</option>
-            <option>Decor</option>
-            <option>Other</option>
+            <option>Tickets</option>
+            <option>Others</option>
           </select>
         </div>
 
@@ -77,10 +79,21 @@
     </div>
 
     <!-- Expenses Log -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
       <h2 class="text-sm font-semibold text-slate-700 mb-3">Expenses & Split Breakdown</h2>
-      <ul id="expenseList" class="divide-y divide-slate-100">
-      </ul>
+      <table id="expenseList" class="min-w-full text-left text-sm divide-y divide-slate-200">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-3 py-2 text-slate-500">Title</th>
+            <th class="px-3 py-2 text-slate-500">Category</th>
+            <th class="px-3 py-2 text-slate-500">Amount</th>
+            <th class="px-3 py-2 text-slate-500">Paid By</th>
+            <th class="px-3 py-2 text-slate-500">Split With</th>
+            <th class="px-3 py-2 text-slate-500">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100"></tbody>
+      </table>
     </div>
 
     <!-- Balance Summary -->
@@ -161,30 +174,32 @@
       `).join('');
 
       // Render Expense List
-      const list = document.getElementById('expenseList');
+      const table = document.getElementById('expenseList');
+      const tbody = table.querySelector('tbody');
       const balanceSummary = document.getElementById('balanceSummary');
       if (event.expenses.length === 0) {
-        list.innerHTML = `<li class="py-3 text-sm text-slate-400 text-center">No expenses logged yet.</li>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-sm text-slate-400">No expenses logged yet.</td></tr>`;
       } else {
-        list.innerHTML = event.expenses.map(e => {
+        tbody.innerHTML = event.expenses.map(e => {
           const splitCount = e.splitWith ? e.splitWith.length : 1;
-          const sharePerPerson = (e.amount / splitCount).toFixed(2);
           const splitNames = e.splitWith ? e.splitWith.join(', ') : 'Everyone';
 
           return `
-            <li class="py-3.5 space-y-1">
-              <div class="flex justify-between items-center text-sm">
-                <div>
-                  <p class="font-medium text-slate-800">${e.title}</p>
-                  <span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md">${e.category}</span>
-                </div>
-                <span class="font-bold text-slate-900">$${e.amount.toFixed(2)}</span>
-              </div>
-              <div class="flex justify-between text-xs text-slate-500 pt-0.5">
-                <span>Paid by <strong class="text-slate-700">${e.paidBy}</strong></span>
-                <span>$${sharePerPerson}/person (${splitNames})</span>
-              </div>
-            </li>
+            <tr data-id="${e.id}">
+              <td class="px-3 py-3 align-top">
+                <input type="text" name="title" value="${e.title}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+              </td>
+              <td class="px-3 py-3 align-top text-slate-700 text-sm">${e.category}</td>
+              <td class="px-3 py-3 align-top">
+                <input type="number" step="0.01" name="amount" value="${e.amount.toFixed(2)}" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+              </td>
+              <td class="px-3 py-3 align-top text-slate-700 text-sm">${e.paidBy}</td>
+              <td class="px-3 py-3 align-top text-slate-700 text-sm">${splitNames}</td>
+              <td class="px-3 py-3 align-top space-x-2">
+                <button onclick="saveExpenseChanges('${e.id}')" class="px-3 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700">Save</button>
+                <button onclick="deleteExpense('${e.id}')" class="px-3 py-1 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700">Delete</button>
+              </td>
+            </tr>
           `;
         }).join('');
       }
@@ -295,6 +310,43 @@
 
       data.splice(eventIndex, 1);
       currentEventId = data[0]?.id || '';
+      saveData();
+    }
+
+    function saveExpenseChanges(expenseId) {
+      const row = document.querySelector(`tr[data-id="${expenseId}"]`);
+      if (!row) return;
+      const event = data.find(e => e.id === currentEventId);
+      if (!event) return;
+
+      const expense = event.expenses.find(e => e.id === expenseId);
+      if (!expense) return;
+
+      const titleInput = row.querySelector('input[name="title"]');
+      const amountInput = row.querySelector('input[name="amount"]');
+      const title = titleInput?.value.trim();
+      const amount = parseFloat(amountInput?.value);
+
+      if (!title) {
+        alert('Expense title cannot be empty.');
+        return;
+      }
+      if (!amount || amount <= 0) {
+        alert('Enter a valid expense amount.');
+        return;
+      }
+
+      expense.title = title;
+      expense.amount = amount;
+      saveData();
+    }
+
+    function deleteExpense(expenseId) {
+      const event = data.find(e => e.id === currentEventId);
+      if (!event) return;
+      const expenseIndex = event.expenses.findIndex(e => e.id === expenseId);
+      if (expenseIndex === -1) return;
+      event.expenses.splice(expenseIndex, 1);
       saveData();
     }
 
