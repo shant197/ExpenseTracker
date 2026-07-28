@@ -17,6 +17,7 @@
         <select id="eventSelect" class="flex-1 p-2.5 bg-slate-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
         </select>
         <button onclick="addNewEvent()" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition">+ New Event</button>
+        <button onclick="deleteCurrentEvent()" class="px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition">Delete</button>
       </div>
 
       <!-- Spending Summary -->
@@ -85,11 +86,12 @@
   </div>
 
   <script>
-    // Initial data starts empty each time the page loads.
-    let data = [];
-    let currentEventId = '';
+    // Initial event data is stored in localStorage so the user can keep track of events entered.
+    let data = JSON.parse(localStorage.getItem('eventTrackerData')) || [];
+    let currentEventId = data[0]?.id || '';
 
     function saveData() {
+      localStorage.setItem('eventTrackerData', JSON.stringify(data));
       render();
     }
 
@@ -196,6 +198,22 @@
         currentEventId = newEvent.id;
         saveData();
       }
+    }
+
+    function deleteCurrentEvent() {
+      if (!currentEventId) {
+        alert('No event selected to delete.');
+        return;
+      }
+      const eventIndex = data.findIndex(e => e.id === currentEventId);
+      if (eventIndex === -1) return;
+
+      const confirmed = confirm(`Delete event "${data[eventIndex].title}" and all its expenses?`);
+      if (!confirmed) return;
+
+      data.splice(eventIndex, 1);
+      currentEventId = data[0]?.id || '';
+      saveData();
     }
 
     document.getElementById('eventSelect').addEventListener('change', (e) => {
