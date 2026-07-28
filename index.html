@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event Expense Tracker</title>
+  <title>Event Expense & Split Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 min-h-screen p-6 text-slate-800">
+<body class="bg-slate-50 min-h-screen p-4 sm:p-6 text-slate-800">
   <div class="max-w-xl mx-auto space-y-6">
 
     <!-- Header & Event Switcher -->
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <h1 class="text-xl font-bold text-slate-900 mb-4">Event Expense Tracker</h1>
+      <h1 class="text-xl font-bold text-slate-900 mb-4">Event Expense & Split Tracker</h1>
       
       <div class="flex gap-2 mb-4">
         <select id="eventSelect" class="flex-1 p-2.5 bg-slate-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -19,14 +19,14 @@
         <button onclick="addNewEvent()" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition">+ New Event</button>
       </div>
 
-      <!-- Budget Summary Cards -->
+      <!-- Budget & Spending Summary -->
       <div class="grid grid-cols-3 gap-3 text-center pt-2">
         <div class="p-3 bg-slate-50 rounded-xl">
           <p class="text-xs text-slate-500">Budget</p>
           <p id="budgetVal" class="text-base font-bold text-slate-900">$0</p>
         </div>
         <div class="p-3 bg-slate-50 rounded-xl">
-          <p class="text-xs text-slate-500">Spent</p>
+          <p class="text-xs text-slate-500">Total Spent</p>
           <p id="spentVal" class="text-base font-bold text-amber-600">$0</p>
         </div>
         <div class="p-3 bg-slate-50 rounded-xl">
@@ -36,11 +36,23 @@
       </div>
     </div>
 
+    <!-- Participants Management Box -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-sm font-semibold text-slate-700">Participants for this Event</h2>
+        <button onclick="addParticipant()" class="text-xs font-semibold text-blue-600 hover:underline">+ Add Person</button>
+      </div>
+      <div id="participantBadges" class="flex flex-wrap gap-2">
+        <!-- Badges inserted here dynamically -->
+      </div>
+    </div>
+
     <!-- Add Expense Form -->
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
       <h2 class="text-sm font-semibold text-slate-700 mb-3">Add Expense</h2>
-      <form id="expenseForm" class="space-y-3">
-        <input id="title" type="text" placeholder="Expense Title (e.g. Flight, Decor)" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      <form id="expenseForm" class="space-y-4">
+        <input id="title" type="text" placeholder="Expense Title (e.g. Dinner, Airbnb)" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        
         <div class="flex gap-2">
           <input id="amount" type="number" step="0.01" placeholder="Amount ($)" required class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <select id="category" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -51,13 +63,29 @@
             <option>Other</option>
           </select>
         </div>
+
+        <!-- Paid By Dropdown -->
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-1">Paid By</label>
+          <select id="payerSelect" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </select>
+        </div>
+
+        <!-- Split Between Checkboxes -->
+        <div>
+          <label class="block text-xs font-medium text-slate-500 mb-2">Split Between</label>
+          <div id="splitCheckboxes" class="space-y-1.5 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100">
+            <!-- Checkboxes inserted here dynamically -->
+          </div>
+        </div>
+
         <button type="submit" class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">Add Expense</button>
       </form>
     </div>
 
-    <!-- Itemized Expense List -->
+    <!-- Expenses Log -->
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <h2 class="text-sm font-semibold text-slate-700 mb-3">Expenses Log</h2>
+      <h2 class="text-sm font-semibold text-slate-700 mb-3">Expenses & Split Breakdown</h2>
       <ul id="expenseList" class="divide-y divide-slate-100">
       </ul>
     </div>
@@ -65,10 +93,24 @@
   </div>
 
   <script>
-    // Initial state with sample events
+    // Initial data with default events & participants
     let data = JSON.parse(localStorage.getItem('eventTrackerData')) || [
-      { id: '1', title: 'Denver Trip', budget: 1500, expenses: [{ id: 'e1', title: 'Flight', amount: 350, category: 'Travel' }] },
-      { id: '2', title: 'Baby Shower', budget: 800, expenses: [{ id: 'e2', title: 'Balloons', amount: 75, category: 'Decor' }] }
+      { 
+        id: '1', 
+        title: 'Denver Trip', 
+        budget: 1500, 
+        participants: ['You', 'Alice', 'Bob'],
+        expenses: [
+          { id: 'e1', title: 'Dinner', amount: 90, category: 'Food', paidBy: 'You', splitWith: ['You', 'Alice', 'Bob'] }
+        ] 
+      },
+      { 
+        id: '2', 
+        title: 'Baby Shower', 
+        budget: 800, 
+        participants: ['You', 'Sarah', 'Mom'],
+        expenses: [] 
+      }
     ];
     let currentEventId = data[0]?.id || '';
 
@@ -84,6 +126,7 @@
       const event = data.find(e => e.id === currentEventId);
       if (!event) return;
 
+      // Render Summary Stats
       const spent = event.expenses.reduce((sum, item) => sum + item.amount, 0);
       const remaining = event.budget - spent;
 
@@ -91,19 +134,67 @@
       document.getElementById('spentVal').innerText = `$${spent.toFixed(2)}`;
       document.getElementById('remainingVal').innerText = `$${remaining.toFixed(2)}`;
 
+      // Render Participant Badges
+      const badgesContainer = document.getElementById('participantBadges');
+      badgesContainer.innerHTML = event.participants.map(p => `
+        <span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium border border-slate-200">${p}</span>
+      `).join('');
+
+      // Render Payer Select Dropdown
+      const payerSelect = document.getElementById('payerSelect');
+      payerSelect.innerHTML = event.participants.map(p => `<option value="${p}">${p}</option>`).join('');
+
+      // Render Split Checkboxes
+      const splitCheckboxes = document.getElementById('splitCheckboxes');
+      splitCheckboxes.innerHTML = event.participants.map(p => `
+        <label class="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+          <input type="checkbox" value="${p}" checked class="split-check rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+          ${p}
+        </label>
+      `).join('');
+
+      // Render Expense List
       const list = document.getElementById('expenseList');
       if (event.expenses.length === 0) {
         list.innerHTML = `<li class="py-3 text-sm text-slate-400 text-center">No expenses logged yet.</li>`;
       } else {
-        list.innerHTML = event.expenses.map(e => `
-          <li class="py-3 flex justify-between items-center text-sm">
-            <div>
-              <p class="font-medium text-slate-800">${e.title}</p>
-              <span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md">${e.category}</span>
-            </div>
-            <span class="font-bold text-slate-900">$${e.amount.toFixed(2)}</span>
-          </li>
-        `).join('');
+        list.innerHTML = event.expenses.map(e => {
+          const splitCount = e.splitWith ? e.splitWith.length : 1;
+          const sharePerPerson = (e.amount / splitCount).toFixed(2);
+          const splitNames = e.splitWith ? e.splitWith.join(', ') : 'Everyone';
+
+          return `
+            <li class="py-3.5 space-y-1">
+              <div class="flex justify-between items-center text-sm">
+                <div>
+                  <p class="font-medium text-slate-800">${e.title}</p>
+                  <span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md">${e.category}</span>
+                </div>
+                <span class="font-bold text-slate-900">$${e.amount.toFixed(2)}</span>
+              </div>
+              <div class="flex justify-between text-xs text-slate-500 pt-0.5">
+                <span>Paid by <strong class="text-slate-700">${e.paidBy}</strong></span>
+                <span>$${sharePerPerson}/person (${splitNames})</span>
+              </div>
+            </li>
+          `;
+        }).join('');
+      }
+    }
+
+    function addParticipant() {
+      const event = data.find(e => e.id === currentEventId);
+      if (!event) return;
+
+      const name = prompt("Enter friend or relative's name:");
+      if (name && name.trim()) {
+        const cleanName = name.trim();
+        if (!event.participants.includes(cleanName)) {
+          event.participants.push(cleanName);
+          saveData();
+        } else {
+          alert("This person is already added to the event.");
+        }
       }
     }
 
@@ -111,7 +202,13 @@
       const title = prompt("Enter event name (e.g. Marriage, Vacation):");
       const budget = parseFloat(prompt("Enter total budget amount ($):")) || 0;
       if (title) {
-        const newEvent = { id: Date.now().toString(), title, budget, expenses: [] };
+        const newEvent = { 
+          id: Date.now().toString(), 
+          title, 
+          budget, 
+          participants: ['You'], 
+          expenses: [] 
+        };
         data.push(newEvent);
         currentEventId = newEvent.id;
         saveData();
@@ -128,10 +225,28 @@
       const title = document.getElementById('title').value;
       const amount = parseFloat(document.getElementById('amount').value);
       const category = document.getElementById('category').value;
+      const paidBy = document.getElementById('payerSelect').value;
+
+      // Get selected participants for split
+      const checkedBoxes = document.querySelectorAll('.split-check:checked');
+      const splitWith = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (splitWith.length === 0) {
+        alert("Please select at least one person to split the expense with.");
+        return;
+      }
 
       const event = data.find(e => e.id === currentEventId);
       if (event && title && amount) {
-        event.expenses.push({ id: Date.now().toString(), title, amount, category });
+        event.expenses.push({ 
+          id: Date.now().toString(), 
+          title, 
+          amount, 
+          category, 
+          paidBy, 
+          splitWith 
+        });
+        
         document.getElementById('title').value = '';
         document.getElementById('amount').value = '';
         saveData();
