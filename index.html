@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Expense Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-6 text-slate-800">
+  <div class="max-w-xl mx-auto space-y-6">
+
+    <!-- Header & Event Switcher -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <h1 class="text-xl font-bold text-slate-900 mb-4">Event Expense Tracker</h1>
+      
+      <div class="flex gap-2 mb-4">
+        <select id="eventSelect" class="flex-1 p-2.5 bg-slate-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </select>
+        <button onclick="addNewEvent()" class="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition">+ New Event</button>
+      </div>
+
+      <!-- Budget Summary Cards -->
+      <div class="grid grid-cols-3 gap-3 text-center pt-2">
+        <div class="p-3 bg-slate-50 rounded-xl">
+          <p class="text-xs text-slate-500">Budget</p>
+          <p id="budgetVal" class="text-base font-bold text-slate-900">$0</p>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl">
+          <p class="text-xs text-slate-500">Spent</p>
+          <p id="spentVal" class="text-base font-bold text-amber-600">$0</p>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl">
+          <p class="text-xs text-slate-500">Remaining</p>
+          <p id="remainingVal" class="text-base font-bold text-emerald-600">$0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Expense Form -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <h2 class="text-sm font-semibold text-slate-700 mb-3">Add Expense</h2>
+      <form id="expenseForm" class="space-y-3">
+        <input id="title" type="text" placeholder="Expense Title (e.g. Flight, Decor)" required class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <div class="flex gap-2">
+          <input id="amount" type="number" step="0.01" placeholder="Amount ($)" required class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <select id="category" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option>Travel</option>
+            <option>Food</option>
+            <option>Venue</option>
+            <option>Decor</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">Add Expense</button>
+      </form>
+    </div>
+
+    <!-- Itemized Expense List -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <h2 class="text-sm font-semibold text-slate-700 mb-3">Expenses Log</h2>
+      <ul id="expenseList" class="divide-y divide-slate-100">
+      </ul>
+    </div>
+
+  </div>
+
+  <script>
+    // Initial state with sample events
+    let data = JSON.parse(localStorage.getItem('eventTrackerData')) || [
+      { id: '1', title: 'Denver Trip', budget: 1500, expenses: [{ id: 'e1', title: 'Flight', amount: 350, category: 'Travel' }] },
+      { id: '2', title: 'Baby Shower', budget: 800, expenses: [{ id: 'e2', title: 'Balloons', amount: 75, category: 'Decor' }] }
+    ];
+    let currentEventId = data[0]?.id || '';
+
+    function saveData() {
+      localStorage.setItem('eventTrackerData', JSON.stringify(data));
+      render();
+    }
+
+    function render() {
+      const select = document.getElementById('eventSelect');
+      select.innerHTML = data.map(e => `<option value="${e.id}" ${e.id === currentEventId ? 'selected' : ''}>${e.title}</option>`).join('');
+
+      const event = data.find(e => e.id === currentEventId);
+      if (!event) return;
+
+      const spent = event.expenses.reduce((sum, item) => sum + item.amount, 0);
+      const remaining = event.budget - spent;
+
+      document.getElementById('budgetVal').innerText = `$${event.budget}`;
+      document.getElementById('spentVal').innerText = `$${spent.toFixed(2)}`;
+      document.getElementById('remainingVal').innerText = `$${remaining.toFixed(2)}`;
+
+      const list = document.getElementById('expenseList');
+      if (event.expenses.length === 0) {
+        list.innerHTML = `<li class="py-3 text-sm text-slate-400 text-center">No expenses logged yet.</li>`;
+      } else {
+        list.innerHTML = event.expenses.map(e => `
+          <li class="py-3 flex justify-between items-center text-sm">
+            <div>
+              <p class="font-medium text-slate-800">${e.title}</p>
+              <span class="text-xs px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md">${e.category}</span>
+            </div>
+            <span class="font-bold text-slate-900">$${e.amount.toFixed(2)}</span>
+          </li>
+        `).join('');
+      }
+    }
+
+    function addNewEvent() {
+      const title = prompt("Enter event name (e.g. Marriage, Vacation):");
+      const budget = parseFloat(prompt("Enter total budget amount ($):")) || 0;
+      if (title) {
+        const newEvent = { id: Date.now().toString(), title, budget, expenses: [] };
+        data.push(newEvent);
+        currentEventId = newEvent.id;
+        saveData();
+      }
+    }
+
+    document.getElementById('eventSelect').addEventListener('change', (e) => {
+      currentEventId = e.target.value;
+      render();
+    });
+
+    document.getElementById('expenseForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const amount = parseFloat(document.getElementById('amount').value);
+      const category = document.getElementById('category').value;
+
+      const event = data.find(e => e.id === currentEventId);
+      if (event && title && amount) {
+        event.expenses.push({ id: Date.now().toString(), title, amount, category });
+        document.getElementById('title').value = '';
+        document.getElementById('amount').value = '';
+        saveData();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
